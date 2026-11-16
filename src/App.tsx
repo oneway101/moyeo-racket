@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { BottomNav } from './components/BottomNav'
 import { AuthProvider, useAuth } from './data/auth'
 import { ClubsProvider, useClubs } from './data/clubs'
+import { MeetingsProvider } from './data/meetings'
 import { AdminPage } from './pages/AdminPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -14,6 +15,7 @@ import { ClubNewPage } from './pages/club/ClubNewPage'
 import { ClubPendingPage } from './pages/club/ClubPendingPage'
 import { ClubsPage } from './pages/club/ClubsPage'
 import { ClubSettingsPage } from './pages/admin/ClubSettingsPage'
+import { MeetingFormPage } from './pages/admin/MeetingFormPage'
 import { MeetingsPage } from './pages/admin/MeetingsPage'
 import { MembersPage } from './pages/admin/MembersPage'
 
@@ -45,6 +47,8 @@ function Screens() {
           <Route path="/me" element={<MyInfoPage />} />
           <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings" element={isAdmin ? <MeetingsPage /> : <Navigate to="/" replace />} />
+          <Route path="/admin/meetings/new" element={isAdmin ? <MeetingFormPage key="new" /> : <Navigate to="/" replace />} />
+          <Route path="/admin/meetings/:id/edit" element={isAdmin ? <MeetingFormPage key="edit" /> : <Navigate to="/" replace />} />
           <Route path="/admin/members" element={isAdmin ? <MembersPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/club" element={isAdmin ? <ClubSettingsPage /> : <Navigate to="/" replace />} />
           <Route path="/clubs" element={myClubs.length > 0 ? <ClubsPage /> : <Navigate to="/clubs/enter" replace />} />
@@ -63,7 +67,11 @@ function Screens() {
 
 function WithClubs({ children }: { children: ReactNode }) {
   const { account } = useAuth()
-  return <ClubsProvider myName={account?.name ?? ''}>{children}</ClubsProvider>
+  return (
+    <ClubsProvider myName={account?.name ?? ''}>
+      <MeetingsProvider>{children}</MeetingsProvider>
+    </ClubsProvider>
+  )
 }
 
 export default function App() {
