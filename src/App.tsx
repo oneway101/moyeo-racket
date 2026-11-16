@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { AuthProvider, useAuth } from './data/auth'
@@ -12,6 +13,9 @@ import { ClubJoinPage } from './pages/club/ClubJoinPage'
 import { ClubNewPage } from './pages/club/ClubNewPage'
 import { ClubPendingPage } from './pages/club/ClubPendingPage'
 import { ClubsPage } from './pages/club/ClubsPage'
+import { ClubSettingsPage } from './pages/admin/ClubSettingsPage'
+import { MeetingsPage } from './pages/admin/MeetingsPage'
+import { MembersPage } from './pages/admin/MembersPage'
 
 /** 클럽을 고르거나 가입하는 화면인지. 이 화면들에는 하단 메뉴가 없다 */
 function isClubEntryPath(path: string): boolean {
@@ -40,6 +44,9 @@ function Screens() {
           <Route path="/" element={<HomePage />} />
           <Route path="/me" element={<MyInfoPage />} />
           <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" replace />} />
+          <Route path="/admin/meetings" element={isAdmin ? <MeetingsPage /> : <Navigate to="/" replace />} />
+          <Route path="/admin/members" element={isAdmin ? <MembersPage /> : <Navigate to="/" replace />} />
+          <Route path="/admin/club" element={isAdmin ? <ClubSettingsPage /> : <Navigate to="/" replace />} />
           <Route path="/clubs" element={myClubs.length > 0 ? <ClubsPage /> : <Navigate to="/clubs/enter" replace />} />
           <Route path="/clubs/enter" element={<ClubEnterPage />} />
           <Route path="/clubs/new" element={<ClubNewPage />} />
@@ -54,15 +61,20 @@ function Screens() {
   )
 }
 
+function WithClubs({ children }: { children: ReactNode }) {
+  const { account } = useAuth()
+  return <ClubsProvider myName={account?.name ?? ''}>{children}</ClubsProvider>
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ClubsProvider>
+        <WithClubs>
           <div className="app">
             <Screens />
           </div>
-        </ClubsProvider>
+        </WithClubs>
       </AuthProvider>
     </BrowserRouter>
   )

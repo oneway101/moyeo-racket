@@ -62,7 +62,7 @@ export function ClubJoinPage() {
           <span className="avatar avatar--lime" aria-hidden="true">{club.name[0]}</span>
           <div>
             <strong>{club.name}</strong>
-            <span>회원 {club.others}명</span>
+            <span>회원 {club.memberCount}명</span>
           </div>
         </div>
         <div className="fixed-row">
