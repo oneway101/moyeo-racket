@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EntryLayout } from '../components/EntryLayout'
 import { NAME_MAX, useAuth } from '../data/auth'
 
 type Step = 'start' | 'loading' | 'name'
@@ -32,73 +33,63 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login">
-      <header className={step === 'start' ? 'login-hero login-hero--tall' : 'login-hero'}>
-        <div className="login-hero-ring" />
-        <div className="tennis-ball" aria-hidden="true" />
-        <div className="login-hero-arc" />
-        <span className="login-kicker">모여라켓</span>
-        <h1>{TITLES[step]}</h1>
-      </header>
+    <EntryLayout kicker="모여라켓" title={TITLES[step]} size={step === 'start' ? 'tall' : 'normal'}>
+      {step === 'start' && (
+        <>
+          {failed && (
+            <div role="alert" className="alert alert--error">
+              <strong>로그인하지 못했어요</strong>
+              <span>카카오 로그인이 취소됐거나 연결이 끊겼어요. 다시 시도해 주세요.</span>
+            </div>
+          )}
+          <span className="grow" />
+          <button className="btn btn--kakao" onClick={startKakao}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#000" aria-hidden="true">
+              <path d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.76l-.95 3.48c-.08.3.26.55.53.38l4.15-2.74c.53.07 1.07.12 1.61.12 5.52 0 10-3.58 10-8S17.52 3 12 3z" />
+            </svg>
+            카카오로 시작하기
+          </button>
+        </>
+      )}
 
-      <div className="login-body">
-        {step === 'start' && (
-          <>
-            {failed && (
-              <div role="alert" className="alert alert--error">
-                <strong>로그인하지 못했어요</strong>
-                <span>카카오 로그인이 취소됐거나 연결이 끊겼어요. 다시 시도해 주세요.</span>
-              </div>
-            )}
-            <span className="grow" />
-            <button className="btn btn--kakao" onClick={startKakao}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="#000" aria-hidden="true">
-                <path d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.76l-.95 3.48c-.08.3.26.55.53.38l4.15-2.74c.53.07 1.07.12 1.61.12 5.52 0 10-3.58 10-8S17.52 3 12 3z" />
-              </svg>
-              카카오로 시작하기
-            </button>
-          </>
-        )}
+      {step === 'loading' && (
+        <div className="entry-loading" role="status">
+          <div className="spinner" />
+          <span>카카오 계정을 확인하고 있어요</span>
+        </div>
+      )}
 
-        {step === 'loading' && (
-          <div className="login-loading" role="status">
-            <div className="spinner" />
-            <span>카카오 계정을 확인하고 있어요</span>
-          </div>
-        )}
-
-        {step === 'name' && (
-          <form
-            className="login-form"
-            onSubmit={(e) => {
-              e.preventDefault()
-              saveName(name)
-            }}
-          >
-            <label className="field">
-              <span>이름</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value.slice(0, NAME_MAX))}
-                maxLength={NAME_MAX}
-                placeholder="예: 김도윤"
-                autoComplete="name"
-                autoFocus
-              />
-            </label>
-            <span className="hint">
-              운영진이 알아볼 수 있도록 실명으로 적어 주세요. 한 번 정하면 직접 바꿀 수 없어요.
-            </span>
-            <span className="grow" />
-            <button type="submit" className="btn btn--primary" disabled={!nameOk}>
-              다음
-            </button>
-            <button type="button" className="btn btn--ghost" onClick={logout}>
-              로그아웃
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+      {step === 'name' && (
+        <form
+          className="entry-form entry-form--fill"
+          onSubmit={(e) => {
+            e.preventDefault()
+            saveName(name)
+          }}
+        >
+          <label className="field">
+            <span>이름</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value.slice(0, NAME_MAX))}
+              maxLength={NAME_MAX}
+              placeholder="예: 김도윤"
+              autoComplete="name"
+              autoFocus
+            />
+          </label>
+          <span className="hint">
+            운영진이 알아볼 수 있도록 실명으로 적어 주세요. 한 번 정하면 직접 바꿀 수 없어요.
+          </span>
+          <span className="grow" />
+          <button type="submit" className="btn btn--primary" disabled={!nameOk}>
+            다음
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={logout}>
+            로그아웃
+          </button>
+        </form>
+      )}
+    </EntryLayout>
   )
 }
