@@ -1,0 +1,11 @@
+{
+  "name": "모여라켓",
+  "short_name": "모여라켓",
+  "description": "테니스 동호회 모임 참석 투표",
+  "lang": "ko",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F9EF",
+  "theme_color": "#237A40",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
