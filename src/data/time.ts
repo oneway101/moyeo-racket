@@ -67,3 +67,51 @@ export function formatSpan(ms: number): string {
   if (abs < DAY_MS) return `${Math.floor(abs / 3_600_000)}시간`
   return `${Math.floor(abs / DAY_MS)}일`
 }
+
+// ── 달력용 날짜 계산. 날짜는 한국 시간 기준의 "2026-10-24" 문자열로 다룬다 ──
+
+const asUtc = (date: string) => new Date(`${date}T00:00:00Z`)
+const fromUtc = (d: Date) => d.toISOString().slice(0, 10)
+
+/** 한국 시간으로 오늘 날짜 */
+export function todayKst(now: number = Date.now()): string {
+  return kstParts(new Date(now).toISOString()).date
+}
+
+export function addDate(date: string, days: number): string {
+  return fromUtc(new Date(asUtc(date).getTime() + days * DAY_MS))
+}
+
+/** 월요일이 0, 일요일이 6 */
+export function weekdayMon(date: string): number {
+  return (asUtc(date).getUTCDay() + 6) % 7
+}
+
+/** 그 날짜가 속한 주의 월요일 */
+export function mondayOf(date: string): string {
+  return addDate(date, -weekdayMon(date))
+}
+
+/** 달을 옮긴다. 옮긴 달에 그 날짜가 없으면 말일로 맞춘다 */
+export function addMonths(date: string, months: number): string {
+  const d = asUtc(date)
+  const day = d.getUTCDate()
+  d.setUTCDate(1)
+  d.setUTCMonth(d.getUTCMonth() + months)
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()
+  d.setUTCDate(Math.min(day, last))
+  return fromUtc(d)
+}
+
+export function daysInMonth(date: string): number {
+  const d = asUtc(date)
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()
+}
+
+export const WEEKDAYS_MON = ['월', '화', '수', '목', '금', '토', '일']
+
+/** 날짜 문자열을 숫자로 나눈다 */
+export function dateParts(date: string): { year: number; month: number; day: number; wd: string } {
+  const [year, month, day] = date.split('-').map(Number)
+  return { year, month, day, wd: WEEKDAYS_MON[weekdayMon(date)] }
+}

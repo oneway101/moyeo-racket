@@ -7,6 +7,7 @@ import { MeetingsProvider } from './data/meetings'
 import { AdminPage } from './pages/AdminPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
+import { MeetingDetailPage } from './pages/MeetingDetailPage'
 import { MyInfoPage } from './pages/MyInfoPage'
 import { ClubEnterPage } from './pages/club/ClubEnterPage'
 import { ClubInvitePage } from './pages/club/ClubInvitePage'
@@ -45,6 +46,7 @@ function Screens() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/me" element={<MyInfoPage />} />
+          <Route path="/meetings/:id" element={<MeetingDetailPage />} />
           <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings" element={isAdmin ? <MeetingsPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings/new" element={isAdmin ? <MeetingFormPage key="new" /> : <Navigate to="/" replace />} />
