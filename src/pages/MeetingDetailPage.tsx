@@ -44,8 +44,8 @@ export function MeetingDetailPage() {
   const [guestDraft, setGuestDraft] = useState('')
   const meeting = id ? getMeeting(id) : null
 
-  // 시작 전 모임은 회원에게 보이지 않는다
-  if (!meeting || meeting.status === 'ready') return <Navigate to="/" replace />
+  // 시작 전 모임은 회원에게 보이지 않는다. 운영진은 관리 화면의 "회원 화면으로 보기"로 미리 볼 수 있다
+  if (!meeting || (meeting.status === 'ready' && current?.role !== 'admin')) return <Navigate to="/" replace />
 
   const roster = rosterOf(meeting)
   const { place, mine } = roster
@@ -64,11 +64,12 @@ export function MeetingDetailPage() {
   const canAddGuest = open && meeting.guestAllowed && isIn && !roster.myGuest
   const count = meeting.capacity ? `${roster.attendCount}/${meeting.capacity}` : `${roster.attendCount}`
 
-  const phase = roster.canceled ? '취소됨' : open ? '진행 중' : '마감'
+  const ready = meeting.status === 'ready'
+  const phase = roster.canceled ? '취소됨' : open ? '진행 중' : ready ? '시작 전' : '마감'
 
   return (
     <>
-      <header className={open ? 'hero detail-hero' : 'hero hero--dark detail-hero'}>
+      <header className={open || ready ? 'hero detail-hero' : 'hero hero--dark detail-hero'}>
         <div className="hero-ring" />
         <div className="detail-top">
           <button className="hero-back" aria-label="홈으로" onClick={() => navigate('/')}>
@@ -77,7 +78,7 @@ export function MeetingDetailPage() {
             </svg>
           </button>
           {current?.role === 'admin' && (
-            <Link to={`/admin/meetings/${meeting.id}/edit`} className="detail-admin">이 모임 관리</Link>
+            <Link to={`/admin/meetings/${meeting.id}`} className="detail-admin">이 모임 관리</Link>
           )}
         </div>
         <div className="detail-title">
@@ -89,8 +90,8 @@ export function MeetingDetailPage() {
         </span>
         <div className="tiles">
           <div>
-            <strong>{roster.canceled ? '취소됨' : open ? `${formatSpan(closes - now)} 남음` : '마감'}</strong>
-            <span>{roster.canceled ? `최소 ${meeting.minPeople}명 미달` : `${formatKst(meeting.closesAt)} 마감`}</span>
+            <strong>{roster.canceled ? '취소됨' : open ? `${formatSpan(closes - now)} 남음` : ready ? '시작 전' : '마감'}</strong>
+            <span>{roster.canceled ? `최소 ${meeting.minPeople}명 미달` : ready ? `${formatKst(meeting.opensAt)} 열림` : `${formatKst(meeting.closesAt)} 마감`}</span>
           </div>
           <div>
             <strong>{meeting.capacity ? count : `${count}명`}</strong>
@@ -103,7 +104,11 @@ export function MeetingDetailPage() {
         {roster.canceled && (
           <div className="alert alert--warn">최소 {meeting.minPeople}명을 채우지 못해 모임이 취소됐어요.</div>
         )}
-        {!open && !roster.canceled && (
+        {ready && <div className="alert alert--plain">아직 투표가 시작되지 않았어요. 회원에게는 열리기 전까지 보이지 않아요.</div>}
+        {roster.canceledMe && (
+          <div className="alert alert--warn">운영진이 취소 처리했어요. 변경은 운영진에게 요청해 주세요.</div>
+        )}
+        {!open && !ready && !roster.canceled && !roster.canceledMe && (
           <div className="alert alert--plain">투표가 마감되어 바꿀 수 없어요. 변경은 운영진에게 요청해 주세요.</div>
         )}
         {open && meeting.minPeople && (

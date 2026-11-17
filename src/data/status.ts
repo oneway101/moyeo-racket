@@ -18,6 +18,7 @@ export function myStatusOf(meeting: Meeting, roster: Roster): MyStatus {
     : place.state === 'no' ? '불참'
     : '미정'
 
+  if (roster.canceledMe) return { kind: 'closed', text: '운영진 취소' }
   if (meeting.status !== 'open') return { kind: 'closed', text: roster.canceled ? '취소됨' : text }
   // 진행 중인데 아직 투표하지 않은 모임은 정원이 찼든 아니든 "투표 필요"
   if (place.state === 'none') return { kind: 'needs', text: '투표 필요' }

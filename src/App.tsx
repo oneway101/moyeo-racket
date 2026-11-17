@@ -18,6 +18,7 @@ import { ClubPendingPage } from './pages/club/ClubPendingPage'
 import { ClubsPage } from './pages/club/ClubsPage'
 import { ClubSettingsPage } from './pages/admin/ClubSettingsPage'
 import { MeetingFormPage } from './pages/admin/MeetingFormPage'
+import { MeetingManagePage } from './pages/admin/MeetingManagePage'
 import { MeetingsPage } from './pages/admin/MeetingsPage'
 import { MembersPage } from './pages/admin/MembersPage'
 
@@ -51,6 +52,7 @@ function Screens() {
           <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings" element={isAdmin ? <MeetingsPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings/new" element={isAdmin ? <MeetingFormPage key="new" /> : <Navigate to="/" replace />} />
+          <Route path="/admin/meetings/:id" element={isAdmin ? <MeetingManagePage /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings/:id/edit" element={isAdmin ? <MeetingFormPage key="edit" /> : <Navigate to="/" replace />} />
           <Route path="/admin/members" element={isAdmin ? <MembersPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/club" element={isAdmin ? <ClubSettingsPage /> : <Navigate to="/" replace />} />

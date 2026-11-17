@@ -24,6 +24,16 @@ export interface Row {
   guestOf: string | null
 }
 
+/** 마감 뒤에 운영진이 취소 처리한 기록 */
+export interface Canceled {
+  /** 회원이면 회원 id, 게스트면 "guest-데려온 회원 id" */
+  id: string
+  name: string
+  nick: string
+  guestOf: string | null
+  at: string
+}
+
 /** 내가 데려온 게스트 */
 export interface MyGuest {
   name: string
@@ -43,6 +53,12 @@ export interface Roster {
   myGuest: MyGuest | null
   /** 이 모임에 등록된 게스트가 있는지 */
   hasGuests: boolean
+  /** 마감 뒤에 운영진이 취소 처리한 사람 */
+  canceledAfter: Canceled[]
+  /** 내가 마감 뒤에 운영진에게 취소 처리됐는지 */
+  canceledMe: boolean
+  /** 마감됐는데 아직 마감 처리를 하지 않아 빈자리에 들어갈 게스트가 남아 있는지 */
+  needsProcess: boolean
   no: Row[]
   /** 아직 투표하지 않은 회원 */
   maybe: Row[]
@@ -60,6 +76,7 @@ export interface Roster {
 
 type Stored = Record<string, Vote[]>
 type StoredGuests = Record<string, Guest[]>
+type StoredCanceled = Record<string, Canceled[]>
 
 interface VotesValue {
   rosterOf: (meeting: Meeting) => Roster
@@ -72,10 +89,18 @@ interface VotesValue {
   /** 게스트 등록. 내가 참석이나 늦참(대기 포함)일 때만 된다 */
   registerGuest: (meetingId: string, name: string) => void
   cancelGuest: (meetingId: string) => void
+  /**
+   * 운영진의 취소 처리. 마감 전이면 명단에서 지워 본인이 다시 투표할 수 있고,
+   * 마감 뒤면 "마감 후 취소" 기록이 남는다. rowId는 명단 줄의 id다
+   */
+  adminCancel: (meetingId: string, rowId: string) => void
+  /** 마감 처리를 바로 실행한다. 여러 번 실행해도 결과가 같다 */
+  processClose: (meetingId: string) => void
 }
 
 const STORAGE_KEY = 'moyeo.votes.v1'
 const GUESTS_KEY = 'moyeo.guests.v1'
+const CANCELED_KEY = 'moyeo.canceled.v1'
 
 function load<T>(key: string): Record<string, T[]> {
   try {
@@ -98,12 +123,13 @@ function save(key: string, data: unknown) {
 const VotesContext = createContext<VotesValue | null>(null)
 
 export function VotesProvider({ children }: { children: ReactNode }) {
-  const { members } = useClubs()
+  const { members, current } = useClubs()
   const { meetings } = useMeetings()
   const [data, setData] = useState<Stored>(() => load<Vote>(STORAGE_KEY))
   const [guestData, setGuestData] = useState<StoredGuests>(() => load<Guest>(GUESTS_KEY))
   const latest = useRef(data)
   const latestGuests = useRef(guestData)
+  const [canceledData, setCanceledData] = useState<StoredCanceled>(() => load<Canceled>(CANCELED_KEY))
 
   const update = useCallback((change: (prev: Stored) => Stored) => {
     const next = change(latest.current)
@@ -119,6 +145,14 @@ export function VotesProvider({ children }: { children: ReactNode }) {
     latestGuests.current = next
     save(GUESTS_KEY, next)
     setGuestData(next)
+  }, [])
+
+  const addCanceled = useCallback((meetingId: string, record: Canceled) => {
+    setCanceledData((prev) => {
+      const next = { ...prev, [meetingId]: [...(prev[meetingId] ?? []), record] }
+      save(CANCELED_KEY, next)
+      return next
+    })
   }, [])
 
   // 마감 처리. 마감된 모임에 자리가 남으면 대기 중인 게스트를 참석으로 바꿔 저장한다.
@@ -205,11 +239,13 @@ export function VotesProvider({ children }: { children: ReactNode }) {
         const seats = memberSeats(cap, guests, inCap)
         const line = lineUp(votes, seats)
         const gl = guestLine(guests, cap, inCap)
-        const voted = new Set(votes.map((v) => v.memberId))
+        // 투표한 사람과 마감 뒤에 취소 처리된 사람은 미정에 넣지 않는다
+        const voted = new Set([...votes.map((v) => v.memberId), ...(canceledData[meeting.id] ?? []).map((c) => c.id)])
         // 정원이 있는데 게스트가 정원 밖이면 따로 세고, 그 밖에는 참석 인원에 함께 센다
         const outside = cap !== null && !inCap
         const mineIdx = gl.wait.findIndex((g) => g.hostId === ME)
         const myGuest = guests.find((g) => g.hostId === ME)
+        const canceledAfter = canceledData[meeting.id] ?? []
         return {
           attend: [...line.attend.map(toRow), ...gl.attend.map(guestRow)],
           wait: [...line.wait.map(toRow), ...gl.wait.map(guestRow)],
@@ -221,6 +257,9 @@ export function VotesProvider({ children }: { children: ReactNode }) {
           extraGuests: outside ? gl.attend.length : 0,
           myGuest: myGuest ? { name: myGuest.name, waitNo: mineIdx >= 0 ? line.wait.length + mineIdx + 1 : 0 } : null,
           hasGuests: stored.length > 0,
+          canceledAfter,
+          canceledMe: canceledAfter.some((c) => c.id === ME),
+          needsProcess: meeting.status === 'closed' && guests !== stored,
           mine: votes.find((v) => v.memberId === ME) ?? null,
           place: placeOf(line, ME),
           waitIfAttend: open && who ? previewWait(votes, seats, who, 'attend') : 0,
@@ -248,8 +287,36 @@ export function VotesProvider({ children }: { children: ReactNode }) {
         if (meeting?.status !== 'open') return
         updateGuests((prev) => ({ ...prev, [id]: removeGuest(prev[id] ?? [], ME) }))
       },
+      adminCancel: (id, rowId) => {
+        const meeting = meetings.find((m) => m.id === id)
+        if (current?.role !== 'admin' || !meeting || meeting.status === 'ready') return
+        const closed = meeting.status === 'closed'
+        const stamp = new Date().toISOString()
+        if (rowId.startsWith('guest-')) {
+          const hostId = rowId.slice('guest-'.length)
+          const guest = (guestData[id] ?? []).find((g) => g.hostId === hostId)
+          if (!guest) return
+          updateGuests((prev) => ({ ...prev, [id]: removeGuest(prev[id] ?? [], hostId) }))
+          if (closed) addCanceled(id, { id: rowId, name: guest.name, nick: '', guestOf: guestRow(guest).guestOf, at: stamp })
+          return
+        }
+        const vote = (data[id] ?? []).find((v) => v.memberId === rowId)
+        if (!vote) return
+        update((prev) => ({ ...prev, [id]: (prev[id] ?? []).filter((v) => v.memberId !== rowId) }))
+        if (closed) {
+          const row = toRow(vote)
+          addCanceled(id, { id: rowId, name: row.name, nick: row.nick, guestOf: null, at: stamp })
+        }
+      },
+      processClose: (id) => {
+        const meeting = meetings.find((m) => m.id === id)
+        if (current?.role !== 'admin' || meeting?.status !== 'closed') return
+        updateGuests((prev) =>
+          prev[id] ? { ...prev, [id]: closeProcess(data[id] ?? [], prev[id], meeting.capacity, meeting.guestInCapacity) } : prev,
+        )
+      },
     }
-  }, [data, guestData, members, meetings, update, updateGuests])
+  }, [data, guestData, canceledData, current, members, meetings, update, updateGuests, addCanceled])
 
   return <VotesContext.Provider value={value}>{children}</VotesContext.Provider>
 }

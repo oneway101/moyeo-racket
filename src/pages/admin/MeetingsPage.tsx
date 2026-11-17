@@ -74,7 +74,7 @@ export function MeetingsPage() {
               </div>
               {g.items.length === 0 && <span className="hint pad">{LABEL[g.status]} 모임이 없어요</span>}
               {g.items.map((m) => (
-                <Link key={m.id} to={`/admin/meetings/${m.id}/edit`} className={`meeting-card meeting-card--${m.status}`}>
+                <Link key={m.id} to={`/admin/meetings/${m.id}`} className={`meeting-card meeting-card--${m.status}`}>
                   <div className="meeting-card-top">
                     <span className={`pill pill--${m.status}`}>{LABEL[m.status]}</span>
                     <span className="meeting-right">{rightText(m, now)}</span>

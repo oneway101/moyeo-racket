@@ -141,14 +141,15 @@ export function MeetingFormPage() {
     }
     if (editing) updateMeeting(editing.id, input)
     else createMeeting(input)
-    navigate('/admin/meetings', { replace: true, state: { toast: editing ? '모임을 고쳤어요' : '모임을 만들었어요' } })
+    if (editing) navigate(`/admin/meetings/${editing.id}`, { replace: true })
+    else navigate('/admin/meetings', { replace: true, state: { toast: '모임을 만들었어요' } })
   }
 
   const resultText = (iso: string | null, verb: string) => (iso ? `${formatKst(iso)}에 ${verb}` : '모임 일시를 고르면 알려 드려요')
 
   return (
     <>
-      <Hero title={editing ? '모임 수정' : '새 모임'} dark onBack={() => navigate('/admin/meetings')} backLabel="모임 관리로 돌아가기" />
+      <Hero title={editing ? '모임 수정' : '새 모임'} dark onBack={() => navigate(editing ? `/admin/meetings/${editing.id}` : '/admin/meetings')} backLabel="돌아가기" />
 
       <form
         className="section"

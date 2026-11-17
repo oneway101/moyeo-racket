@@ -51,6 +51,10 @@ interface MeetingsValue {
   now: number
   createMeeting: (input: MeetingInput) => string
   updateMeeting: (id: string, input: MeetingInput) => void
+  /** 진행 중인 모임을 지금 마감한다 */
+  closeNow: (id: string) => void
+  /** 모임을 지운다. 되돌릴 수 없다 */
+  deleteMeeting: (id: string) => void
 }
 
 const STORAGE_KEY = 'moyeo.meetings.v1'
@@ -120,6 +124,16 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
       updateMeeting: (id, input) => {
         if (!isAdmin) return
         update((prev) => prev.map((m) => (m.id === id && m.clubId === clubId ? { ...m, ...input } : m)))
+      },
+      closeNow: (id) => {
+        const target = meetings.find((m) => m.id === id)
+        if (!isAdmin || target?.status !== 'open') return
+        const at = new Date().toISOString()
+        update((prev) => prev.map((m) => (m.id === id ? { ...m, closesAt: at, closeRule: 'custom' } : m)))
+      },
+      deleteMeeting: (id) => {
+        if (!isAdmin) return
+        update((prev) => prev.filter((m) => !(m.id === id && m.clubId === clubId)))
       },
     }
   }, [data, now, clubId, isAdmin, update])

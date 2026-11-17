@@ -711,3 +711,36 @@ a.btn { text-decoration: none; }
 .attend-row--guest .attend-no { background: var(--color-accent-2-300); color: var(--color-accent-2-900); font-size: 13px; }
 .attend-row--guest.attend-row--me { background: var(--color-accent-100); }
 .attend-row--guest.attend-row--me .attend-no { background: var(--color-accent-2-400); color: var(--color-accent-2-900); }
+
+/* 모임 관리 화면 */
+.more-btn {
+  width: 44px; height: 44px; border-radius: 999px; border: none; background: rgba(255, 255, 255, 0.12);
+  color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.manage-deadline { position: relative; font-size: 16px; font-weight: 700; color: var(--color-accent-2-300); }
+.phase--ready { background: var(--color-neutral-200) !important; color: var(--color-neutral-900) !important; }
+.btn--dark { background: var(--color-neutral-900); color: #fff; }
+.btn--dark:hover { background: #000; }
+.process-box { gap: 10px; }
+.manage-roster { gap: 4px; padding: 10px 12px; }
+.manage-sec { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
+.manage-sec + .manage-sec { border-top: 1px solid var(--color-neutral-300); }
+.manage-sec-head { display: flex; align-items: baseline; justify-content: space-between; padding: 4px 8px 6px; }
+.manage-sec-head h2 { font-size: 18px; }
+.manage-sec-head span { font-size: 15px; font-weight: 700; color: var(--color-neutral-700); }
+.manage-sec .fold-none { padding: 0 8px 6px; }
+.manage-row {
+  width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 8px;
+  border: none; border-radius: 12px; background: transparent; color: var(--color-text); text-align: left; font-size: 17px;
+}
+.manage-row--tap { cursor: pointer; }
+.manage-row--tap:hover { background: var(--color-neutral-200); }
+.manage-row svg { flex: none; }
+.manage-no {
+  flex: none; width: 28px; height: 28px; border-radius: 999px; background: var(--color-accent-200); color: var(--color-accent-900);
+  display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700;
+}
+.manage-no--guest { background: var(--color-accent-2-300); color: var(--color-accent-2-900); font-size: 13px; }
+.manage-no--blank { background: transparent; }
+.manage-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet a.btn { text-decoration: none; }
