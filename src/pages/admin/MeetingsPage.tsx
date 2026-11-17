@@ -3,7 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Hero } from '../../components/Hero'
 import { useToast } from '../../components/useToast'
 import { useMeetings, type Meeting, type MeetingStatus } from '../../data/meetings'
+import { attendLine } from '../../data/status'
 import { formatKst, formatKstDay, formatSpan } from '../../data/time'
+import { useVotes, type Roster } from '../../data/votes'
 
 const LABEL: Record<MeetingStatus, string> = { open: '진행 중', ready: '시작 전', closed: '마감' }
 
@@ -13,10 +15,9 @@ function rightText(m: Meeting, now: number): string {
   return `${formatKstDay(m.closesAt)} 마감`
 }
 
-function countText(m: Meeting): string {
+function countText(m: Meeting, roster: Roster): string {
   if (m.status === 'ready') return m.capacity ? `정원 ${m.capacity}명` : '정원 없음'
-  // 참석 인원은 투표 기능을 만들면 실제 값으로 바뀐다
-  return m.capacity ? `참석 0/${m.capacity}` : '참석 0명'
+  return attendLine(m, roster).replace(' 대기', ' · 대기')
 }
 
 const time = (iso: string) => new Date(iso).getTime()
@@ -24,6 +25,7 @@ const time = (iso: string) => new Date(iso).getTime()
 /** 모임 관리 목록. 시작 전, 진행 중, 마감된 모임을 모두 보여준다 */
 export function MeetingsPage() {
   const { meetings, now } = useMeetings()
+  const { rosterOf } = useVotes()
   const navigate = useNavigate()
   const location = useLocation()
   const [toast, say] = useToast()
@@ -80,7 +82,7 @@ export function MeetingsPage() {
                   <strong>{m.title}</strong>
                   <div className="meeting-card-bottom">
                     <span>{formatKst(m.at)}</span>
-                    <span>{countText(m)}</span>
+                    <span>{countText(m, rosterOf(m))}</span>
                   </div>
                 </Link>
               ))}

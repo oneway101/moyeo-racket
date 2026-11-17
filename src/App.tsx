@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav'
 import { AuthProvider, useAuth } from './data/auth'
 import { ClubsProvider, useClubs } from './data/clubs'
 import { MeetingsProvider } from './data/meetings'
+import { VotesProvider } from './data/votes'
 import { AdminPage } from './pages/AdminPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -71,7 +72,9 @@ function WithClubs({ children }: { children: ReactNode }) {
   const { account } = useAuth()
   return (
     <ClubsProvider myName={account?.name ?? ''}>
-      <MeetingsProvider>{children}</MeetingsProvider>
+      <MeetingsProvider>
+        <VotesProvider>{children}</VotesProvider>
+      </MeetingsProvider>
     </ClubsProvider>
   )
 }

@@ -7,6 +7,7 @@ import { usePersisted } from '../components/usePersisted'
 import { useAuth } from '../data/auth'
 import { useClubs } from '../data/clubs'
 import { useMeetings, type Meeting } from '../data/meetings'
+import { useVotes } from '../data/votes'
 import { DOT_ORDER, myStatusOf, type StatusKind } from '../data/status'
 import {
   WEEKDAYS_MON, addDate, addMonths, dateParts, daysInMonth, formatSpan, kstParts, mondayOf, todayKst, weekdayMon,
@@ -37,6 +38,7 @@ export function HomePage() {
   const { account } = useAuth()
   const { current, myClubs, switchClub } = useClubs()
   const { meetings, now } = useMeetings()
+  const { rosterOf } = useVotes()
   const navigate = useNavigate()
   const [sheetOpen, setSheetOpen] = useState(false)
   const today = todayKst(now)
@@ -49,6 +51,8 @@ export function HomePage() {
   const byDate = new Map<string, Meeting[]>()
   for (const m of meetings) {
     if (m.status === 'ready') continue
+    // 참석자가 한 명도 없이 마감된 모임은 홈에 나오지 않는다
+    if (m.status === 'closed' && rosterOf(m).attend.length === 0) continue
     const date = kstParts(m.at).date
     byDate.set(date, [...(byDate.get(date) ?? []), m])
   }
@@ -58,7 +62,7 @@ export function HomePage() {
       (a, b) => Number(a.status === 'closed') - Number(b.status === 'closed') || time(a.closesAt) - time(b.closesAt),
     )
   const dotOf = (date: string): StatusKind | null => {
-    const kinds = on(date).map((m) => myStatusOf(m).kind)
+    const kinds = on(date).map((m) => myStatusOf(m, rosterOf(m)).kind)
     return DOT_ORDER.find((k) => kinds.includes(k)) ?? null
   }
 
@@ -73,7 +77,7 @@ export function HomePage() {
 
   // 진행 중인데 아직 투표하지 않은 모임이 보고 있는 날짜 밖에 있으면 바로가기를 띄운다
   const banner = meetings
-    .filter((m) => m.status === 'open' && myStatusOf(m).kind === 'needs' && !inRange(kstParts(m.at).date))
+    .filter((m) => m.status === 'open' && myStatusOf(m, rosterOf(m)).kind === 'needs' && !inRange(kstParts(m.at).date))
     .sort((a, b) => time(a.closesAt) - time(b.closesAt))
 
   const move = (dir: 1 | -1) => setSel(view === 'month' ? addMonths(sel, dir) : addDate(sel, dir * 7))
@@ -151,7 +155,7 @@ export function HomePage() {
                 )
               })}
             </div>
-            {dayList.map((m) => <MeetingCard key={m.id} meeting={m} now={now} size="big" />)}
+            {dayList.map((m) => <MeetingCard key={m.id} meeting={m} roster={rosterOf(m)} now={now} size="big" />)}
             {dayList.length === 0 && <p className="cal-empty">이날 모임 없음</p>}
           </>
         )}
@@ -168,7 +172,7 @@ export function HomePage() {
                     <strong>{p.day}</strong>
                   </div>
                   <div className="week-list">
-                    {list.map((m) => <MeetingCard key={m.id} meeting={m} now={now} size="small" hideMin />)}
+                    {list.map((m) => <MeetingCard key={m.id} meeting={m} roster={rosterOf(m)} now={now} size="small" hideMin />)}
                     {list.length === 0 && <div className="week-none" />}
                   </div>
                 </div>
@@ -207,7 +211,7 @@ export function HomePage() {
               </div>
             </div>
             <div className="sel-label">{dayLabel(sel)}{sel === today && <span className="today-tag">오늘</span>}</div>
-            {dayList.map((m) => <MeetingCard key={m.id} meeting={m} now={now} size="small" />)}
+            {dayList.map((m) => <MeetingCard key={m.id} meeting={m} roster={rosterOf(m)} now={now} size="small" />)}
             {dayList.length === 0 && <p className="cal-empty">이날 모임 없음</p>}
           </>
         )}

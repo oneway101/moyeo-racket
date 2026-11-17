@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Meeting } from '../data/meetings'
 import { attendLine, myStatusOf } from '../data/status'
+import type { Roster } from '../data/votes'
 import { dateParts, formatKstDay, formatSpan, kstParts } from '../data/time'
 
 const peopleIcon = (
@@ -16,6 +17,7 @@ const clockIcon = (
 
 interface Props {
   meeting: Meeting
+  roster: Roster
   now: number
   /** big: 일간, small: 주간과 월간 */
   size: 'big' | 'small'
@@ -24,8 +26,8 @@ interface Props {
 }
 
 /** 홈 달력의 모임 카드. 내 상태가 오른쪽 위에 가장 먼저 보인다 */
-export function MeetingCard({ meeting: m, now, size, hideMin }: Props) {
-  const status = myStatusOf(m)
+export function MeetingCard({ meeting: m, roster, now, size, hideMin }: Props) {
+  const status = myStatusOf(m, roster)
   const open = m.status === 'open'
   const p = kstParts(m.at)
   const when = size === 'big' ? `${p.month}/${p.day}(${dateParts(p.date).wd}) ${p.time}` : p.time
@@ -37,10 +39,11 @@ export function MeetingCard({ meeting: m, now, size, hideMin }: Props) {
       <span className="vote-when">{when}</span>
       <span className="vote-title">{m.title}</span>
       <span className="vote-foot">
-        <span className="vote-count">{peopleIcon}{attendLine(m)}</span>
+        <span className="vote-count">{peopleIcon}{attendLine(m, roster)}</span>
         <span className={open ? 'vote-left vote-left--open' : 'vote-left'}>{open && clockIcon}{left}</span>
       </span>
       {open && m.minPeople && !hideMin && <span className="vote-min">최소 {m.minPeople}명 · 미달 시 자동 취소</span>}
+      {roster.canceled && !hideMin && <span className="vote-min vote-min--gray">최소 {m.minPeople}명 미달로 취소됨</span>}
     </Link>
   )
 }
