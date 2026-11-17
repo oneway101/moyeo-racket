@@ -172,3 +172,101 @@ describe('미리 알려 주기', () => {
     expect(votes).toHaveLength(2)
   })
 })
+
+import { addGuest, closeProcess, guestLine, memberSeats, removeGuest, type Guest } from './roster'
+
+describe('게스트', () => {
+  const names = (gs: Guest[]) => gs.map((g) => g.name).join(',')
+
+  it('회원 한 명에 게스트는 한 명까지다', () => {
+    let guests = addGuest([], a, '민준')
+    guests = addGuest(guests, a, '서윤')
+    expect(names(guests)).toBe('민준')
+  })
+
+  it('이름이 비었으면 등록되지 않고, 20자까지만 받는다', () => {
+    expect(addGuest([], a, '   ')).toHaveLength(0)
+    expect(addGuest([], a, '가'.repeat(30))[0].name).toHaveLength(20)
+  })
+
+  it('정원에 포함되는 게스트는 자리가 남아도 마감 전에는 대기다', () => {
+    const guests = addGuest([], a, '민준')
+    const line = guestLine(guests, 8, true)
+    expect(line.attend).toHaveLength(0)
+    expect(names(line.wait)).toBe('민준')
+  })
+
+  it('정원에 포함되지 않는 게스트는 바로 참석이고 회원 자리를 줄이지 않는다', () => {
+    const guests = addGuest([], a, '민준')
+    expect(names(guestLine(guests, 2, false).attend)).toBe('민준')
+    expect(memberSeats(2, guests, false)).toBe(2)
+  })
+
+  it('정원이 없는 모임에서는 정원 포함 여부와 상관없이 게스트가 바로 참석이다', () => {
+    const guests = addGuest([], a, '민준')
+    expect(names(guestLine(guests, null, true).attend)).toBe('민준')
+    expect(memberSeats(null, guests, true)).toBeNull()
+  })
+
+  it('마감 처리에서 자리가 남으면 게스트가 등록한 순서대로 참석이 된다', () => {
+    let guests = addGuest([], a, '민준')
+    guests = addGuest(guests, b, '서윤')
+    guests = addGuest(guests, c, '지우')
+    guests = closeProcess(attendAll(a, b, c), guests, 5, true) // 회원 3명, 남는 자리 2
+    const line = guestLine(guests, 5, true)
+    expect(names(line.attend)).toBe('민준,서윤')
+    expect(names(line.wait)).toBe('지우')
+  })
+
+  it('회원이 정원을 채우면 게스트는 참석이 되지 않는다', () => {
+    const guests = closeProcess(attendAll(a, b, c), addGuest([], a, '민준'), 3, true)
+    expect(guestLine(guests, 3, true).attend).toHaveLength(0)
+  })
+
+  it('마감 처리는 여러 번 실행해도 결과가 같다', () => {
+    const votes = attendAll(a, b)
+    const once = closeProcess(votes, addGuest(addGuest([], a, '민준'), b, '서윤'), 3, true)
+    const twice = closeProcess(votes, once, 3, true)
+    expect(twice).toBe(once)
+    expect(names(guestLine(twice, 3, true).attend)).toBe('민준')
+  })
+
+  it('마감 뒤 빈 자리가 생기면 대기 중인 회원이 먼저, 그다음 게스트가 참석이 된다', () => {
+    let votes = attendAll(a, b, c) // 정원 2: a, b 참석, c 대기
+    let guests = closeProcess(votes, addGuest([], a, '민준'), 2, true)
+    expect(guestLine(guests, 2, true).attend).toHaveLength(0)
+
+    votes = votes.filter((v) => v.memberId !== 'a') // 운영진이 a를 취소 처리
+    guests = closeProcess(votes, guests, 2, true)
+    expect(ids(lineUp(votes, memberSeats(2, guests, true)).attend)).toBe('bc') // 회원 c가 먼저
+    expect(guestLine(guests, 2, true).attend).toHaveLength(0)
+
+    votes = votes.filter((v) => v.memberId !== 'b') // 한 명 더 취소
+    guests = closeProcess(votes, guests, 2, true)
+    expect(names(guestLine(guests, 2, true).attend)).toBe('민준') // 이제 게스트 차례
+  })
+
+  it('데려온 회원이 취소해도 게스트는 명단에 남는다', () => {
+    let votes = attendAll(a)
+    const guests = addGuest([], a, '민준')
+    votes = pickAttend(votes, a) // a가 투표를 취소
+    expect(votes).toHaveLength(0)
+    expect(names(guestLine(guests, 4, true).wait)).toBe('민준')
+  })
+
+  it('투표를 다시 열어도 이미 참석이 된 게스트는 그대로이고, 그만큼 회원 자리가 줄어든다', () => {
+    const guests = closeProcess(attendAll(a), addGuest([], a, '민준'), 2, true)
+    expect(memberSeats(2, guests, true)).toBe(1)
+    const line = lineUp(attendAll(a, b), memberSeats(2, guests, true)) // 다시 열린 뒤 b가 참석
+    expect(ids(line.attend)).toBe('a')
+    expect(ids(line.wait)).toBe('b')
+    expect(names(guestLine(guests, 2, true).attend)).toBe('민준')
+  })
+
+  it('게스트를 취소하면 명단에서 지워져 다시 등록할 수 있다', () => {
+    let guests = addGuest([], a, '민준')
+    guests = removeGuest(guests, 'a')
+    expect(guests).toHaveLength(0)
+    expect(names(addGuest(guests, a, '서윤'))).toBe('서윤')
+  })
+})

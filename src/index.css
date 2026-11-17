@@ -699,3 +699,15 @@ a.btn { text-decoration: none; }
 .name-chip { padding: 6px 14px; border-radius: 999px; background: var(--color-neutral-200); color: var(--color-neutral-900); font-size: 16px; }
 .name-chip--me { background: var(--color-accent-2-200); color: var(--color-accent-2-900); font-weight: 700; }
 .vote-min--gray { color: var(--color-neutral-800); }
+
+/* 게스트 */
+.box-title { font-size: 17px; }
+.late-box .guest-input { width: 100%; }
+.guest-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.guest-row > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.guest-row strong { font-size: 19px; overflow-wrap: anywhere; }
+.guest-row div span { font-size: 15px; color: var(--color-neutral-800); }
+.guest-row .btn { flex: none; padding: 0 16px; background: #fff; }
+.attend-row--guest .attend-no { background: var(--color-accent-2-300); color: var(--color-accent-2-900); font-size: 13px; }
+.attend-row--guest.attend-row--me { background: var(--color-accent-100); }
+.attend-row--guest.attend-row--me .attend-no { background: var(--color-accent-2-400); color: var(--color-accent-2-900); }

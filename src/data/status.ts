@@ -26,7 +26,7 @@ export function myStatusOf(meeting: Meeting, roster: Roster): MyStatus {
 
 /** "참석 8/16 대기 2", 정원이 없으면 "참석 21명" */
 export function attendLine(meeting: Meeting, roster: Roster): string {
-  const base = meeting.capacity ? `참석 ${roster.attend.length}/${meeting.capacity}` : `참석 ${roster.attend.length}명`
+  const base = meeting.capacity ? `참석 ${roster.attendCount}/${meeting.capacity}` : `참석 ${roster.attendCount}명`
   return roster.wait.length > 0 ? `${base} 대기 ${roster.wait.length}` : base
 }
 

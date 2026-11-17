@@ -6,6 +6,7 @@ import {
   type CloseRule, type Meeting, type OpenRule,
 } from '../../data/meetings'
 import { addDays, formatKst, kstParts, kstToIso } from '../../data/time'
+import { useVotes } from '../../data/votes'
 
 const OPEN_OPTIONS: { rule: OpenRule; label: string }[] = [
   { rule: 14, label: '2주 전' }, { rule: 7, label: '7일 전' }, { rule: 3, label: '3일 전' },
@@ -90,6 +91,7 @@ function DateTimeFields(props: {
 export function MeetingFormPage() {
   const { id } = useParams()
   const { getMeeting, createMeeting, updateMeeting, now } = useMeetings()
+  const { rosterOf } = useVotes()
   const navigate = useNavigate()
   const editing = id ? getMeeting(id) : null
   const [f, setF] = useState<Form>(() => initialForm(editing))
@@ -105,6 +107,10 @@ export function MeetingFormPage() {
   const cap = f.cap ? Number(f.cap) : null
   const minP = f.minP ? Number(f.minP) : null
   const minError = cap !== null && minP !== null && minP > cap
+  // 이미 참석이 확정된 인원보다 적게는 정원을 정할 수 없다
+  const roster = editing ? rosterOf(editing) : null
+  const seated = roster ? roster.attendCount : 0
+  const capError = cap !== null && cap < seated && cap !== editing?.capacity
 
   const t = (iso: string) => new Date(iso).getTime()
   let timeError = ''
@@ -116,10 +122,15 @@ export function MeetingFormPage() {
   }
 
   // 게스트를 정원에 포함할지는 게스트를 허용하고 정원이 있을 때만 고를 수 있다
-  const guestCapLocked = !f.guestOn ? '게스트 허용을 켜면 고를 수 있어요' : cap === null ? '정원이 없으면 게스트도 바로 참석해요' : ''
-  const guestCapOn = f.guestOn && cap !== null && f.guestCap
+  // 게스트가 이미 등록된 모임은 정원 포함 여부를 바꿀 수 없다
+  const hasGuests = !!roster?.hasGuests
+  const guestCapLocked =
+    hasGuests ? '게스트가 이미 등록되어 바꿀 수 없어요'
+    : !f.guestOn ? '게스트 허용을 켜면 고를 수 있어요'
+    : cap === null ? '정원이 없으면 게스트도 바로 참석해요' : ''
+  const guestCapOn = hasGuests && editing ? editing.guestInCapacity : f.guestOn && cap !== null && f.guestCap
 
-  const ready = f.title.trim().length > 0 && !!at && !!opensAt && !!closesAt && !minError && !timeError
+  const ready = f.title.trim().length > 0 && !!at && !!opensAt && !!closesAt && !minError && !capError && !timeError
 
   const submit = () => {
     if (!ready || !at || !opensAt || !closesAt) return
@@ -172,9 +183,17 @@ export function MeetingFormPage() {
           <label className="field field--compact">
             <span>정원</span>
             <div className="with-unit">
-              <input inputMode="numeric" value={f.cap} onChange={(e) => set({ cap: cleanCount(e.target.value) })} placeholder="비우면 제한 없음" />
+              <input
+                inputMode="numeric"
+                value={f.cap}
+                onChange={(e) => set({ cap: cleanCount(e.target.value) })}
+                placeholder="비우면 제한 없음"
+                aria-invalid={capError}
+                className={capError ? 'input--error' : undefined}
+              />
               <span>명</span>
             </div>
+            {capError && <span className="field-error" role="alert">이미 참석이 확정된 {seated}명보다 적게 정할 수 없어요</span>}
           </label>
           <label className="field field--compact">
             <span>최소 인원</span>
@@ -252,7 +271,7 @@ export function MeetingFormPage() {
           <div className="toggle-row">
             <span>
               <strong>게스트 허용</strong>
-              <span>회원 1명당 1명까지</span>
+              <span>{hasGuests && !f.guestOn ? '끄면 새 등록만 막고, 이미 등록된 게스트는 남아요' : '회원 1명당 1명까지'}</span>
             </span>
             <button type="button" role="switch" className="switch" aria-checked={f.guestOn} aria-label="게스트 허용" onClick={() => set({ guestOn: !f.guestOn })}>
               <span />

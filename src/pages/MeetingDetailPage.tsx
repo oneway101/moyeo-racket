@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { MemberName } from '../components/MemberName'
 import { useClubs, displayName } from '../data/clubs'
 import { useMeetings } from '../data/meetings'
+import { GUEST_NAME_MAX } from '../data/roster'
 import { dateParts, formatKst, formatSpan, kstParts } from '../data/time'
 import { lateDefault, useVotes, type Row } from '../data/votes'
 
@@ -23,7 +24,7 @@ function Chips({ rows, numbered }: { rows: Row[]; numbered?: boolean }) {
     <>
       {rows.map((r, i) => (
         <span key={r.id} className={r.isMe ? 'name-chip name-chip--me' : 'name-chip'}>
-          {numbered ? `${i + 1}. ` : ''}{displayName(r.name, r.nick)}
+          {numbered ? `${i + 1}. ` : ''}{displayName(r.name, r.nick)}{r.guestOf && ` (${r.guestOf} 게스트)`}
         </span>
       ))}
     </>
@@ -35,10 +36,12 @@ export function MeetingDetailPage() {
   const { id } = useParams()
   const { current } = useClubs()
   const { getMeeting, now } = useMeetings()
-  const { rosterOf, attend, decline, setLateTime, cancelLateTime } = useVotes()
+  const { rosterOf, attend, decline, setLateTime, cancelLateTime, registerGuest, cancelGuest } = useVotes()
   const navigate = useNavigate()
   const [lateOpen, setLateOpen] = useState(false)
   const [lateDraft, setLateDraft] = useState('')
+  const [guestOpen, setGuestOpen] = useState(false)
+  const [guestDraft, setGuestDraft] = useState('')
   const meeting = id ? getMeeting(id) : null
 
   // 시작 전 모임은 회원에게 보이지 않는다
@@ -52,6 +55,14 @@ export function MeetingDetailPage() {
   const at = kstParts(meeting.at)
   const closes = new Date(meeting.closesAt).getTime()
   const draft = lateDraft || lateDefault(meeting)
+
+  // 게스트 안내는 모임에 따라 다르다
+  const guestNote =
+    meeting.capacity === null ? '정원이 없는 모임이라 게스트도 바로 참석해요.'
+    : meeting.guestInCapacity ? '정원이 정해진 모임이에요. 게스트는 마감 때 빈자리가 있을 때만 참석할 수 있어요.'
+    : '게스트는 정원과 상관없이 바로 참석해요.'
+  const canAddGuest = open && meeting.guestAllowed && isIn && !roster.myGuest
+  const count = meeting.capacity ? `${roster.attendCount}/${meeting.capacity}` : `${roster.attendCount}`
 
   const phase = roster.canceled ? '취소됨' : open ? '진행 중' : '마감'
 
@@ -82,7 +93,7 @@ export function MeetingDetailPage() {
             <span>{roster.canceled ? `최소 ${meeting.minPeople}명 미달` : `${formatKst(meeting.closesAt)} 마감`}</span>
           </div>
           <div>
-            <strong>{meeting.capacity ? `${roster.attend.length}/${meeting.capacity}` : `${roster.attend.length}명`}</strong>
+            <strong>{meeting.capacity ? count : `${count}명`}</strong>
             <span>참석 인원{roster.wait.length > 0 && ` · 대기 ${roster.wait.length}`}</span>
           </div>
         </div>
@@ -182,19 +193,80 @@ export function MeetingDetailPage() {
           </div>
         )}
 
+        {canAddGuest && !guestOpen && (
+          <button className="link-btn" onClick={() => setGuestOpen(true)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" />
+            </svg>
+            게스트가 있나요?
+          </button>
+        )}
+
+        {canAddGuest && guestOpen && (
+          <form
+            className="late-box"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!guestDraft.trim()) return
+              registerGuest(meeting.id, guestDraft)
+              setGuestDraft('')
+              setGuestOpen(false)
+            }}
+          >
+            <strong className="box-title">게스트 동반</strong>
+            <input
+              className="guest-input"
+              value={guestDraft}
+              onChange={(e) => setGuestDraft(e.target.value.slice(0, GUEST_NAME_MAX))}
+              maxLength={GUEST_NAME_MAX}
+              placeholder="게스트 이름"
+              aria-label="게스트 이름"
+              autoFocus
+            />
+            <span>{guestNote} 한 명까지 데려올 수 있어요.</span>
+            <div className="btn-row">
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => setGuestOpen(false)}>취소</button>
+              <button type="submit" className="btn btn--primary btn--small" disabled={!guestDraft.trim()}>등록</button>
+            </div>
+          </form>
+        )}
+
+        {roster.myGuest && (
+          <div className="late-box">
+            <strong className="box-title">게스트 동반</strong>
+            <div className="guest-row">
+              <div>
+                <strong>{roster.myGuest.name}</strong>
+                <span>
+                  {roster.myGuest.waitNo > 0
+                    ? `대기 ${roster.myGuest.waitNo}번${open ? ' · 마감 때 빈자리가 있으면 참석돼요' : ''}`
+                    : '참석'}
+                </span>
+              </div>
+              {open && (
+                <button className="btn btn--ghost btn--small" onClick={() => cancelGuest(meeting.id)}>참석 취소</button>
+              )}
+            </div>
+            {open && !isIn && <span>내가 참석하지 않아도 게스트는 명단에 남아요. 함께 빠지려면 게스트도 취소해 주세요.</span>}
+          </div>
+        )}
+
         <section className="card roster" aria-label="명단">
           <div className="roster-head">
             <h2>참석</h2>
-            <span>{meeting.capacity ? `${roster.attend.length}/${meeting.capacity}명` : `${roster.attend.length}명`}</span>
+            <span>{count}명{roster.extraGuests > 0 && ` · 정원 외 게스트 ${roster.extraGuests}명`}</span>
           </div>
           {roster.attend.length === 0 ? (
             <span className="muted">아직 참석한 사람이 없어요</span>
           ) : (
             <ol className="attend-list">
               {roster.attend.map((r, i) => (
-                <li key={r.id} className={r.isMe ? 'attend-row attend-row--me' : 'attend-row'}>
-                  <span className="attend-no">{i + 1}</span>
-                  <span className="attend-name"><MemberName name={r.name} nick={r.nick} /></span>
+                <li key={r.id} className={`attend-row${r.isMe ? ' attend-row--me' : ''}${r.guestOf ? ' attend-row--guest' : ''}`}>
+                  <span className="attend-no">{r.guestOf ? '게' : i + 1}</span>
+                  <span className="attend-name">
+                    <MemberName name={r.name} nick={r.nick} />
+                    {r.guestOf && <span className="nick"> ({r.guestOf} 게스트)</span>}
+                  </span>
                   {r.lateTime && <span className="attend-note">{r.lateTime} 도착</span>}
                 </li>
               ))}

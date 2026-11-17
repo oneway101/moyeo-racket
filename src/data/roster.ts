@@ -118,3 +118,72 @@ export function previewWait(votes: Vote[], capacity: number | null, who: Voter, 
   const place = placeOf(lineUp(after, capacity), who.id)
   return place.state === 'wait' ? place.no : 0
 }
+
+// ── 게스트 ──────────────────────────────────────────────────────────────
+//
+// - 회원 한 명이 게스트 한 명까지 데려올 수 있다. 게스트는 등록한 차례로 따로 순번을 받고,
+//   데려온 회원이 취소해도 명단에 남는다.
+// - 모든 모임은 회원 우선이다. 정원에 포함되는 게스트는 대기로 두었다가
+//   마감 때 자리가 남을 때만 참석이 된다.
+// - 정원에 포함되지 않는 게스트와 정원이 없는 모임의 게스트는 바로 참석이 된다.
+
+export const GUEST_NAME_MAX = 20
+
+export interface Guest {
+  /** 데려온 회원 */
+  hostId: string
+  hostName: string
+  name: string
+  seq: number
+  /** 마감 처리에서 자리를 받았는지. 한 번 자리를 받으면 투표를 다시 열어도 그대로다 */
+  admitted: boolean
+}
+
+/** 게스트가 정원 안에서 자리를 다투는 모임인지 */
+const competes = (capacity: number | null, inCapacity: boolean): capacity is number => capacity !== null && inCapacity
+
+const bySeq = (a: Guest, b: Guest) => a.seq - b.seq
+
+/** 회원이 쓸 수 있는 자리 수. 이미 자리를 받은 게스트만큼 줄어든다 */
+export function memberSeats(capacity: number | null, guests: Guest[], inCapacity: boolean): number | null {
+  if (!competes(capacity, inCapacity)) return capacity
+  return Math.max(0, capacity - guests.filter((g) => g.admitted).length)
+}
+
+/** 게스트를 등록한다. 한 회원에 한 명뿐이라 이미 있으면 그대로 둔다 */
+export function addGuest(guests: Guest[], host: Voter, name: string): Guest[] {
+  const trimmed = name.trim().slice(0, GUEST_NAME_MAX)
+  if (!trimmed || guests.some((g) => g.hostId === host.id)) return guests
+  const seq = guests.reduce((max, g) => Math.max(max, g.seq), 0) + 1
+  return [...guests, { hostId: host.id, hostName: host.name, name: trimmed, seq, admitted: false }]
+}
+
+export function removeGuest(guests: Guest[], hostId: string): Guest[] {
+  return guests.filter((g) => g.hostId !== hostId)
+}
+
+export interface GuestLine {
+  attend: Guest[]
+  wait: Guest[]
+}
+
+export function guestLine(guests: Guest[], capacity: number | null, inCapacity: boolean): GuestLine {
+  const sorted = [...guests].sort(bySeq)
+  if (!competes(capacity, inCapacity)) return { attend: sorted, wait: [] }
+  return { attend: sorted.filter((g) => g.admitted), wait: sorted.filter((g) => !g.admitted) }
+}
+
+/**
+ * 마감 처리. 회원을 모두 앉히고도 자리가 남으면 대기 중인 게스트를 순번대로 참석으로 바꾼다.
+ * 여러 번 실행해도 결과가 같고, 바뀐 것이 없으면 받은 배열을 그대로 돌려준다.
+ */
+export function closeProcess(votes: Vote[], guests: Guest[], capacity: number | null, inCapacity: boolean): Guest[] {
+  if (!competes(capacity, inCapacity)) return guests
+  const members = votes.filter((v) => v.choice !== 'no').length
+  const admitted = guests.filter((g) => g.admitted).length
+  const free = capacity - admitted - members
+  if (free <= 0) return guests
+  const next = new Set(guests.filter((g) => !g.admitted).sort(bySeq).slice(0, free))
+  if (next.size === 0) return guests
+  return guests.map((g) => (next.has(g) ? { ...g, admitted: true } : g))
+}
