@@ -53,11 +53,6 @@ export function MeetingDetailPage() {
   const closes = new Date(meeting.closesAt).getTime()
   const draft = lateDraft || lateDefault(meeting)
 
-  // 정원이 찬 모임에서는 지금 참석하면 대기 몇 번이 되는지 미리 알려 준다.
-  // 투표한 뒤의 내 순번은 아래 명단에서 확인한다
-  const attendSub =
-    open && place.state === 'none' && roster.waitIfAttend > 0 ? `정원이 찼어요 · 지금 누르면 대기 ${roster.waitIfAttend}번` : ''
-
   const phase = roster.canceled ? '취소됨' : open ? '진행 중' : '마감'
 
   return (
@@ -115,10 +110,7 @@ export function MeetingDetailPage() {
             }}
           >
             {isIn && check}
-            <span>
-              <strong>참석</strong>
-              {attendSub && <span>{attendSub}</span>}
-            </span>
+            <strong>참석</strong>
           </button>
           <button
             className={`vote-btn vote-btn--no${place.state === 'no' ? ' vote-btn--on' : ''}`}
