@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from './data/auth'
 import { ClubsProvider, useClubs } from './data/clubs'
 import { MeetingsProvider } from './data/meetings'
 import { VotesProvider } from './data/votes'
+import { NotifyProvider } from './data/notify'
+import { FirstVisitGuide } from './components/FirstVisitGuide'
 import { AdminPage } from './pages/AdminPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -69,6 +71,8 @@ function Screens() {
         </Routes>
       </main>
       {!entry && <BottomNav isAdmin={isAdmin} />}
+      {/* 첫 접속 안내는 클럽에 들어온 뒤에 보여준다. 가입 화면을 가리지 않으려는 것이다 */}
+      {!entry && <FirstVisitGuide />}
     </>
   )
 }
@@ -89,9 +93,11 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <WithClubs>
-          <div className="app">
-            <Screens />
-          </div>
+          <NotifyProvider>
+            <div className="app">
+              <Screens />
+            </div>
+          </NotifyProvider>
         </WithClubs>
       </AuthProvider>
     </BrowserRouter>

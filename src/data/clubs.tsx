@@ -92,6 +92,14 @@ interface ClubsValue {
   /** 초대 코드를 새로 만든다. 예전 코드와 링크는 못 쓰게 된다 */
   regenerateCode: () => void
   deleteClub: () => void
+
+  // 아래는 지금 보는 클럽에서 나에 대한 것
+  /** 이 클럽에서 쓰는 별명을 바꾼다. 비우면 실명만 보인다 */
+  updateNick: (nick: string) => void
+  /** 운영진이 나 혼자라서 클럽을 나갈 수 없는지 */
+  soleAdmin: boolean
+  /** 지금 보는 클럽에서 나간다. 이미 한 투표와 게스트는 명단에 남는다 */
+  leaveClub: () => void
 }
 
 const STORAGE_KEY = 'moyeo.clubs.v2'
@@ -286,6 +294,16 @@ export function ClubsProvider({ myName, children }: { myName: string; children: 
           ...prev,
           clubs: prev.clubs.map((c) => (c.id === curId ? { ...c, code: newCode(prev.clubs.map((x) => x.code)) } : c)),
         }))
+      },
+      updateNick: (nick) => {
+        if (!curId) return
+        const trimmed = nick.trim().slice(0, NICK_MAX)
+        update((prev) => ({ ...prev, memberships: prev.memberships.map((m) => (m.clubId === curId ? { ...m, nick: trimmed } : m)) }))
+      },
+      soleAdmin: iAmAdmin && !here.some((p) => p.status === 'approved' && p.role === 'admin'),
+      leaveClub: () => {
+        if (!curId || (iAmAdmin && !here.some((p) => p.status === 'approved' && p.role === 'admin'))) return
+        update((prev) => ({ ...prev, memberships: prev.memberships.filter((m) => m.clubId !== curId), currentId: null }))
       },
       deleteClub: () => {
         if (!iAmAdmin) return
