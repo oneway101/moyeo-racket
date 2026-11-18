@@ -744,3 +744,55 @@ a.btn { text-decoration: none; }
 .manage-no--blank { background: transparent; }
 .manage-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sheet a.btn { text-decoration: none; }
+
+/* 정기 모임 */
+.pills { display: flex; gap: 6px; align-items: center; }
+.pill--reg { border: 1.5px solid var(--color-neutral-400); color: var(--color-neutral-800); }
+.phase--reg { background: transparent !important; border: 1.5px solid rgba(255, 255, 255, 0.5); color: #fff !important; }
+.entry-row {
+  display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 18px;
+  border-radius: var(--radius-md); border: 1.5px solid var(--color-neutral-300); background: var(--color-neutral-100);
+  color: var(--color-text); text-decoration: none;
+}
+.entry-row strong { flex: 1; font-size: 17px; }
+.entry-row span { font-size: 15px; color: var(--color-neutral-700); }
+.check-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px;
+  border: 1.5px solid var(--color-neutral-300); background: var(--color-neutral-200); color: var(--color-text);
+  text-align: left; cursor: pointer;
+}
+.check-row > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.check-row strong { font-size: 17px; }
+.check-row > span:last-child > span { font-size: 14px; color: var(--color-neutral-700); }
+.check-box {
+  flex: none; width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--color-neutral-500); background: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff;
+}
+.check-row[aria-checked='true'] { border-color: var(--color-accent-600); background: var(--color-accent-100); }
+.check-row[aria-checked='true'] .check-box { background: var(--color-accent-600); border-color: var(--color-accent-600); }
+.regular-box { display: flex; flex-direction: column; gap: 14px; padding: 14px; border-radius: 16px; background: var(--color-neutral-200); }
+.regular-box .chips button { min-height: 40px; font-size: 15px; }
+.regular-box input[type='date'] {
+  min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1.5px solid var(--color-neutral-400);
+  background: #fff; color: var(--color-text); font-size: 17px;
+}
+.regular-box .alert strong { font-size: 15px; line-height: 1.5; }
+.template { gap: 6px; padding: 18px; }
+.template-title { font-size: 20px; }
+.template-repeat { font-size: 16px; font-weight: 700; color: var(--color-accent-800); }
+.template-meta { font-size: 14px; color: var(--color-neutral-700); line-height: 1.45; }
+.occ-head { margin: 8px 0 0; font-size: 15px; }
+.occ-list { list-style: none; margin: 0; padding: 0; }
+.occ { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--color-neutral-300); }
+.occ > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.occ strong { font-size: 16px; }
+.occ span { font-size: 14px; color: var(--color-neutral-700); }
+.occ--skip strong { text-decoration: line-through; color: var(--color-neutral-600); }
+.sm-btn {
+  flex: none; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--color-neutral-400);
+  background: transparent; color: var(--color-text); font-size: 14px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; text-decoration: none;
+}
+.sm-btn--green { border-color: var(--color-accent-600); color: var(--color-accent-700); }
+.sm-btn--dark { background: var(--color-neutral-900); border-color: var(--color-neutral-900); color: #fff; }
+.template .btn-row { margin-top: 8px; }

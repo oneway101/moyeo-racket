@@ -24,7 +24,7 @@ const time = (iso: string) => new Date(iso).getTime()
 
 /** 모임 관리 목록. 시작 전, 진행 중, 마감된 모임을 모두 보여준다 */
 export function MeetingsPage() {
-  const { meetings, now } = useMeetings()
+  const { meetings, templates, now } = useMeetings()
   const { rosterOf } = useVotes()
   const navigate = useNavigate()
   const location = useLocation()
@@ -58,6 +58,17 @@ export function MeetingsPage() {
           새 모임 만들기
         </Link>
 
+        <Link to="/admin/regular" className="entry-row">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17 2l4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" />
+          </svg>
+          <strong>정기 모임</strong>
+          <span>{templates.length > 0 ? `${templates.length}개` : '등록하기'}</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-600)" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </Link>
+
         {meetings.length === 0 && (
           <div className="card empty">
             <strong>아직 만든 모임이 없어요</strong>
@@ -76,7 +87,10 @@ export function MeetingsPage() {
               {g.items.map((m) => (
                 <Link key={m.id} to={`/admin/meetings/${m.id}`} className={`meeting-card meeting-card--${m.status}`}>
                   <div className="meeting-card-top">
-                    <span className={`pill pill--${m.status}`}>{LABEL[m.status]}</span>
+                    <span className="pills">
+                      <span className={`pill pill--${m.status}`}>{LABEL[m.status]}</span>
+                      {m.templateId && <span className="pill pill--reg">정기</span>}
+                    </span>
                     <span className="meeting-right">{rightText(m, now)}</span>
                   </div>
                   <strong>{m.title}</strong>

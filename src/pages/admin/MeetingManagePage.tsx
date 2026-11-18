@@ -32,7 +32,7 @@ function formatStamp(iso: string): string {
 /** 모임 관리. 명단과 지금 할 수 있는 조치가 먼저 보인다 */
 export function MeetingManagePage() {
   const { id } = useParams()
-  const { getMeeting, now, closeNow, deleteMeeting } = useMeetings()
+  const { getMeeting, getTemplate, now, closeNow, deleteMeeting, stopTemplate } = useMeetings()
   const { rosterOf, adminCancel, processClose } = useVotes()
   const navigate = useNavigate()
   const [toast, say] = useToast()
@@ -44,6 +44,8 @@ export function MeetingManagePage() {
   if (!meeting) return <Navigate to="/admin/meetings" replace />
 
   const roster = rosterOf(meeting)
+  // 정기 모임이 만든 모임은 삭제 대신 "모임 중단"을 한다. 정기 모임이 이미 중단됐으면 그냥 삭제한다
+  const template = meeting.templateId ? getTemplate(meeting.templateId) : null
   const { status } = meeting
   const closed = status === 'closed'
   const at = kstParts(meeting.at)
@@ -94,7 +96,10 @@ export function MeetingManagePage() {
           </button>
         </div>
         <div className="detail-title">
-          <span className={`phase phase--${status}${roster.canceled ? ' phase--canceled' : ''}`}>{roster.canceled ? '취소됨' : PHASE[status]}</span>
+          <span className="pills">
+            <span className={`phase phase--${status}${roster.canceled ? ' phase--canceled' : ''}`}>{roster.canceled ? '취소됨' : PHASE[status]}</span>
+            {meeting.templateId && <span className="phase phase--reg">정기</span>}
+          </span>
           <h1>{meeting.title}</h1>
         </div>
         <span className="detail-when">
@@ -210,7 +215,7 @@ export function MeetingManagePage() {
               setDialog('delete')
             }}
           >
-            모임 삭제
+            {template ? '모임 중단' : '모임 삭제'}
           </button>
           <button className="btn btn--text" onClick={() => setMenuOpen(false)}>닫기</button>
         </Sheet>
@@ -261,7 +266,29 @@ export function MeetingManagePage() {
           }}
         />
       )}
-      {dialog === 'delete' && (
+      {dialog === 'delete' && template && (
+        <Confirm
+          title="모임을 중단할까요?"
+          points={[
+            `"${template.title}" 정기 모임이 멈춰요.`,
+            '앞으로 예정된 회차와 아직 모임 시각이 지나지 않은 모임이 모두 지워져요. 이 모임도 지워져요.',
+            '지난 모임의 참석 내역은 그대로 남아요. 되돌릴 수 없어요.',
+          ]}
+          action="모임 중단"
+          cancelLabel="돌아가기"
+          onCancel={() => setDialog(null)}
+          onConfirm={() => {
+            const gone = new Date(meeting.at).getTime() > Date.now()
+            stopTemplate(template.id)
+            if (gone) navigate('/admin/meetings', { replace: true, state: { toast: '정기 모임을 중단했어요' } })
+            else {
+              setDialog(null)
+              say('정기 모임을 중단했어요')
+            }
+          }}
+        />
+      )}
+      {dialog === 'delete' && !template && (
         <Confirm
           title="모임을 삭제할까요?"
           points={['참석 내역과 게스트가 모두 지워져요.', '삭제하면 되돌릴 수 없어요.']}

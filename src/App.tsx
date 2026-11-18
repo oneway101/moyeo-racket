@@ -21,6 +21,7 @@ import { MeetingFormPage } from './pages/admin/MeetingFormPage'
 import { MeetingManagePage } from './pages/admin/MeetingManagePage'
 import { MeetingsPage } from './pages/admin/MeetingsPage'
 import { MembersPage } from './pages/admin/MembersPage'
+import { RegularPage } from './pages/admin/RegularPage'
 
 /** 클럽을 고르거나 가입하는 화면인지. 이 화면들에는 하단 메뉴가 없다 */
 function isClubEntryPath(path: string): boolean {
@@ -54,6 +55,8 @@ function Screens() {
           <Route path="/admin/meetings/new" element={isAdmin ? <MeetingFormPage key="new" /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings/:id" element={isAdmin ? <MeetingManagePage /> : <Navigate to="/" replace />} />
           <Route path="/admin/meetings/:id/edit" element={isAdmin ? <MeetingFormPage key="edit" /> : <Navigate to="/" replace />} />
+          <Route path="/admin/regular" element={isAdmin ? <RegularPage /> : <Navigate to="/" replace />} />
+          <Route path="/admin/regular/:tid/edit" element={isAdmin ? <MeetingFormPage key="regular-edit" /> : <Navigate to="/" replace />} />
           <Route path="/admin/members" element={isAdmin ? <MembersPage /> : <Navigate to="/" replace />} />
           <Route path="/admin/club" element={isAdmin ? <ClubSettingsPage /> : <Navigate to="/" replace />} />
           <Route path="/clubs" element={myClubs.length > 0 ? <ClubsPage /> : <Navigate to="/clubs/enter" replace />} />
